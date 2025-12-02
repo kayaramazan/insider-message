@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: Insider Message API
+  description: Message management and automation API
+  version: 1.0.0
+  contact:
+    name: Ramazan Kaya
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+  /api/automation/toggle:
+    put:
+      summary: Toggle Automation Status
+      description: Starts or stops the message sending automation
+      operationId: toggleAutomation
+      tags:
+        - Automation
+      responses:
+        '200':
+          description: Automation status successfully toggled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ToggleResponse'
+
+  /api/messages:
+    get:
+      summary: List Sent Messages
+      description: Retrieves all sent messages
+      operationId: getAllSentMessages
+      tags:
+        - Messages
+      responses:
+        '200':
+          description: Messages successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/message:
+    post:
+      summary: Create New Message
+      description: Creates a new message
+      operationId: createMessage
+      tags:
+        - Messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+      responses:
+        '200':
+          description: Message successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Message ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        content:
+          type: string
+          maxLength: 200
+          description: Message content
+          example: "Hello, this is a test message."
+        phone:
+          type: string
+          description: Phone number
+          example: "+905551234567"
+        status:
+          type: integer
+          enum: [1, 2]
+          description: "Message status: 1=pending, 2=sent"
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2025-12-02T10:30:00Z"
+
+    CreateMessageRequest:
+      type: object
+      required:
+        - content
+        - phone
+      properties:
+        content:
+          type: string
+          maxLength: 200
+          description: Message content (required, max 200 characters)
+          example: "Hello, this is a test message."
+        phone:
+          type: string
+          description: Phone number (required)
+          example: "+905551234567"
+
+    ToggleResponse:
+      type: object
+      properties:
+        Status:
+          type: string
+          description: Operation status
+          example: "Accepted"
+        Automation Status:
+          type: boolean
+          description: Current automation status
+          example: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Failed to fetch messages"
+
+tags:
+  - name: Messages
+    description: Message operations
+  - name: Automation
+    description: Automation controls

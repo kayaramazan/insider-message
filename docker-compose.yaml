@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: insider-message-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=Aa123456
+      - DB_NAME=postgres
+      - DB_SSLMODE=disable
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    volumes:
+      - ./config.docker.yaml:/app/config.yaml
+    restart: unless-stopped
+    networks:
+      - insider-network
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: insider-message-migrate
+    command: ["go", "run", "-mod=vendor", "cmd/migrate/main.go", "up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=Aa123456
+      - DB_NAME=postgres
+      - DB_SSLMODE=disable
+    volumes:
+      - ./migrations:/app/migrations
+      - ./config.docker.yaml:/app/config.yaml
+    networks:
+      - insider-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: insider-message-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Aa123456
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - insider-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: insider-message-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - insider-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  insider-network:
+    driver: bridge

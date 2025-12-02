@@ -1,0 +1,19 @@
+db:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: Aa123456
+  dbname: postgres
+  sslmode: disable
+
+redis:
+  host: localhost
+  port: 6379
+  password:
+
+timer:
+  interval: 1 # minutes
+  message_per_cycle: 2
+  
+webhook:
+  url: https://webhook.site/4ae5fdf9-4bbf-413a-a5ff-ad86a3058efa
