@@ -53,8 +53,13 @@ insider-message/
 git clone https://github.com/kayaramazan/insider-message.git
 cd insider-message
 ```
+### 2. Run database migrations
 
-### 2. Start all services
+```bash
+docker-compose run --rm migrate
+```
+
+### 3. Start all services
 
 ```bash
 docker-compose up -d
@@ -65,11 +70,7 @@ This will start:
 - Redis on port `6379`
 - Application on port `8080`
 
-### 3. Run database migrations
 
-```bash
-docker-compose run --rm migrate
-```
 
 ### 4. Verify the application is running
 
