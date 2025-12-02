@@ -14,9 +14,10 @@ type Config struct {
 }
 
 type RedisConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Password string `mapstructure:"password"`
+	Host       string `mapstructure:"host"`
+	Port       int    `mapstructure:"port"`
+	Password   string `mapstructure:"password"`
+	Expiration int    `mapstructure:"expiration"`
 }
 
 type DatabaseConfig struct {
@@ -74,6 +75,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("redis.port", 6379)
 	v.SetDefault("redis.host", "localhost")
 	v.SetDefault("redis.password", "")
+	v.SetDefault("redis.expiration", 3)
 
 	v.SetDefault("db.host", "localhost")
 	v.SetDefault("db.port", 5432)

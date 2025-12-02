@@ -52,7 +52,7 @@ func main() {
 
 }
 
-func SetupRoutes(handler *handler.Handler) {
+func SetupRoutes(handler handler.Handler) {
 
 	http.HandleFunc("PUT /api/automation/toggle", handler.StartOrStop)
 	http.HandleFunc("GET /api/messages", handler.GetAllSentMessages)

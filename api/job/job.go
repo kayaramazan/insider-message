@@ -9,42 +9,48 @@ import (
 	"github.com/kayaramazan/insider-message/api/service"
 )
 
-type Job struct {
-	Mu             sync.RWMutex
+type Job interface {
+	IsRunning() bool
+	Toggle()
+	Start()
+}
+
+type jobImpl struct {
+	mu             sync.RWMutex
 	Running        bool
 	interval       time.Duration
 	cancel         context.CancelFunc
 	lastRun        time.Time
 	runCount       int64
-	messageService *service.MessageService
+	messageService service.MessageService
 }
 
-func New(interval time.Duration, messageService *service.MessageService) *Job {
-	return &Job{
+func New(interval time.Duration, messageService service.MessageService) Job {
+	return &jobImpl{
 		interval:       interval,
 		messageService: messageService,
 	}
 }
 
-func (job *Job) Start() {
-	job.Mu.Lock()
+func (job *jobImpl) Start() {
+	job.mu.Lock()
 	if job.Running {
-		job.Mu.Unlock()
+		job.mu.Unlock()
 		return
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	job.cancel = cancel
 	job.Running = true
-	job.Mu.Unlock()
+	job.mu.Unlock()
 
 	go job.run(ctx)
 	log.Println("Job started")
 }
 
-func (j *Job) Stop() {
-	j.Mu.Lock()
-	defer j.Mu.Unlock()
+func (j *jobImpl) stop() {
+	j.mu.Lock()
+	defer j.mu.Unlock()
 
 	if !j.Running {
 		return
@@ -55,7 +61,7 @@ func (j *Job) Stop() {
 	log.Println("Job stopped")
 }
 
-func (j *Job) run(ctx context.Context) {
+func (j *jobImpl) run(ctx context.Context) {
 	ticker := time.NewTicker(j.interval)
 	defer ticker.Stop()
 
@@ -71,30 +77,30 @@ func (j *Job) run(ctx context.Context) {
 	}
 }
 
-func (j *Job) doWork() {
-	j.Mu.Lock()
+func (j *jobImpl) doWork() {
+	j.mu.Lock()
 	j.lastRun = time.Now()
 	j.runCount++
-	j.Mu.Unlock()
+	j.mu.Unlock()
 	err := j.messageService.SendMessage(context.Background())
 	if err != nil {
 		log.Println("Messages could not sending ", err)
 	}
 }
 
-func (j *Job) IsRunning() bool {
-	j.Mu.RLock()
-	defer j.Mu.RUnlock()
+func (j *jobImpl) IsRunning() bool {
+	j.mu.RLock()
+	defer j.mu.RUnlock()
 	return j.Running
 }
 
-func (j *Job) Toggle() {
-	j.Mu.Lock()
+func (j *jobImpl) Toggle() {
+	j.mu.Lock()
 	running := j.Running
-	j.Mu.Unlock()
+	j.mu.Unlock()
 
 	if running {
-		j.Stop()
+		j.stop()
 	} else {
 		j.Start()
 	}

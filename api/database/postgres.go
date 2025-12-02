@@ -10,16 +10,16 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type PostgresDB struct {
+type postgresDB struct {
 	db  *sql.DB
 	cfg *config.DatabaseConfig
 }
 
-func NewPostgresDB(cfg *config.DatabaseConfig) *PostgresDB {
-	return &PostgresDB{cfg: cfg}
+func NewPostgresDB(cfg *config.DatabaseConfig) Database {
+	return &postgresDB{cfg: cfg}
 }
 
-func (p *PostgresDB) Connect(ctx context.Context) error {
+func (p *postgresDB) Connect(ctx context.Context) error {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		p.cfg.Host,
@@ -45,21 +45,21 @@ func (p *PostgresDB) Connect(ctx context.Context) error {
 	return nil
 }
 
-func (p *PostgresDB) Close() error {
+func (p *postgresDB) Close() error {
 	if p.db != nil {
 		return p.db.Close()
 	}
 	return nil
 }
 
-func (p *PostgresDB) Query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (p *postgresDB) Query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	return p.db.QueryContext(ctx, query, args...)
 }
 
-func (p *PostgresDB) QueryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (p *postgresDB) QueryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	return p.db.QueryRowContext(ctx, query, args...)
 }
 
-func (p *PostgresDB) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (p *postgresDB) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	return p.db.ExecContext(ctx, query, args...)
 }

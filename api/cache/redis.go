@@ -10,10 +10,11 @@ import (
 )
 
 type RedisCache struct {
-	client *redis.Client
+	client     *redis.Client
+	expiration time.Duration
 }
 
-func NewRedisCache(cfg *config.RedisConfig) (*RedisCache, error) {
+func NewRedisCache(cfg *config.RedisConfig) (Cache, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     cfg.Host + ":" + strconv.Itoa(cfg.Port),
 		Password: cfg.Password,
@@ -27,15 +28,15 @@ func NewRedisCache(cfg *config.RedisConfig) (*RedisCache, error) {
 		return nil, err
 	}
 
-	return &RedisCache{client: client}, nil
+	return &RedisCache{client: client, expiration: time.Duration(cfg.Expiration) * time.Hour}, nil
 }
 
 func (r *RedisCache) Get(ctx context.Context, key string) (string, error) {
 	return r.client.Get(ctx, key).Result()
 }
 
-func (r *RedisCache) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error {
-	return r.client.Set(ctx, key, value, expiration).Err()
+func (r *RedisCache) Set(ctx context.Context, key string, value interface{}) error {
+	return r.client.Set(ctx, key, value, r.expiration).Err()
 }
 
 func (r *RedisCache) Delete(ctx context.Context, key string) error {

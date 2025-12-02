@@ -8,13 +8,19 @@ import (
 	"github.com/kayaramazan/insider-message/api/service"
 )
 
-type Handler struct {
-	messageService *service.MessageService
-	job            *job.Job
+type Handler interface {
+	GetAllSentMessages(w http.ResponseWriter, r *http.Request)
+	CreateMessage(w http.ResponseWriter, r *http.Request)
+	StartOrStop(w http.ResponseWriter, r *http.Request)
 }
 
-func NewHandler(messageService *service.MessageService, job *job.Job) *Handler {
-	return &Handler{
+type handlerImpl struct {
+	messageService service.MessageService
+	job            job.Job
+}
+
+func NewHandler(messageService service.MessageService, job job.Job) Handler {
+	return &handlerImpl{
 		messageService: messageService,
 		job:            job,
 	}

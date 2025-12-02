@@ -7,15 +7,24 @@ import (
 	"github.com/kayaramazan/insider-message/api/model"
 )
 
-type MessageRepository struct {
-	db *database.PostgresDB
+type MessageRepository interface {
+	Create(ctx context.Context, message *model.Message) error
+	GetAllSentMessages(ctx context.Context) ([]model.Message, error)
+	GetUnsendMessages(ctx context.Context, limit int) ([]model.Message, error)
+	UpdateMessageStatus(ctx context.Context, id string, status int) error
 }
 
-func NewMessageRepository(db *database.PostgresDB) *MessageRepository {
-	return &MessageRepository{db: db}
+type messageRepositoryImpl struct {
+	db database.Database
 }
 
-func (r *MessageRepository) Create(ctx context.Context, message *model.Message) error {
+func NewMessageRepository(db database.Database) MessageRepository {
+	return &messageRepositoryImpl{
+		db: db,
+	}
+}
+
+func (r *messageRepositoryImpl) Create(ctx context.Context, message *model.Message) error {
 	query := `
         INSERT INTO messages (content, phone)
         VALUES ($1, $2)
@@ -26,7 +35,7 @@ func (r *MessageRepository) Create(ctx context.Context, message *model.Message) 
 	return err
 }
 
-func (r *MessageRepository) GetAllSentMessages(ctx context.Context) ([]model.Message, error) {
+func (r *messageRepositoryImpl) GetAllSentMessages(ctx context.Context) ([]model.Message, error) {
 	var messages []model.Message
 	query := `SELECT id, content, phone, created_at, status FROM messages where status = $1 ORDER BY created_at`
 
@@ -52,7 +61,7 @@ func (r *MessageRepository) GetAllSentMessages(ctx context.Context) ([]model.Mes
 	return messages, nil
 }
 
-func (r *MessageRepository) GetUnsendMessages(ctx context.Context, limit int) ([]model.Message, error) {
+func (r *messageRepositoryImpl) GetUnsendMessages(ctx context.Context, limit int) ([]model.Message, error) {
 	var messages []model.Message
 	query := `SELECT id, content, phone, created_at FROM messages where status != $1 ORDER BY created_at limit $2`
 
@@ -77,7 +86,7 @@ func (r *MessageRepository) GetUnsendMessages(ctx context.Context, limit int) ([
 	return messages, nil
 }
 
-func (r *MessageRepository) UpdateMessageStatus(ctx context.Context, id string, status int) error {
+func (r *messageRepositoryImpl) UpdateMessageStatus(ctx context.Context, id string, status int) error {
 
 	_, err := r.db.Exec(ctx, `UPDATE messages SET status = $1 WHERE id=$2`, status, id)
 

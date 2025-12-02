@@ -6,21 +6,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/kayaramazan/insider-message/api/cache"
 	"github.com/kayaramazan/insider-message/api/model"
 	"github.com/kayaramazan/insider-message/api/repository"
 )
 
-type MessageService struct {
-	MessageRepo     *repository.MessageRepository
-	RedisCache      *cache.RedisCache
+type MessageService interface {
+	GetAllSentMessages(ctx context.Context) ([]model.Message, error)
+	CreateMessage(ctx context.Context, message *model.Message) error
+	SendMessage(ctx context.Context) error
+}
+
+type messageServiceImpl struct {
+	MessageRepo     repository.MessageRepository
+	RedisCache      cache.Cache
 	webhookUrl      string
 	messagePerCycle int
 }
 
-func NewMessageService(messageRepo *repository.MessageRepository, cache *cache.RedisCache, url string, messagePerCycle int) *MessageService {
-	return &MessageService{
+func NewMessageService(messageRepo repository.MessageRepository, cache cache.Cache, url string, messagePerCycle int) MessageService {
+	return &messageServiceImpl{
 		MessageRepo:     messageRepo,
 		RedisCache:      cache,
 		webhookUrl:      url,
@@ -28,15 +35,15 @@ func NewMessageService(messageRepo *repository.MessageRepository, cache *cache.R
 	}
 }
 
-func (s *MessageService) GetAllSentMessages(ctx context.Context) ([]model.Message, error) {
+func (s *messageServiceImpl) GetAllSentMessages(ctx context.Context) ([]model.Message, error) {
 	return s.MessageRepo.GetAllSentMessages(ctx)
 }
 
-func (s *MessageService) CreateMessage(ctx context.Context, message *model.Message) error {
+func (s *messageServiceImpl) CreateMessage(ctx context.Context, message *model.Message) error {
 	return s.MessageRepo.Create(ctx, message)
 }
 
-func (s *MessageService) SendMessage(ctx context.Context) error {
+func (s *messageServiceImpl) SendMessage(ctx context.Context) error {
 	messages, err := s.MessageRepo.GetUnsendMessages(ctx, s.messagePerCycle)
 	if err != nil {
 		return err
@@ -48,13 +55,14 @@ func (s *MessageService) SendMessage(ctx context.Context) error {
 		}
 
 		fmt.Printf("SENT: MessageID: %s, Content: %s \n", message.ID, message.Content)
+		s.RedisCache.Set(ctx, message.ID, time.Now())
 		s.MessageRepo.UpdateMessageStatus(ctx, message.ID, int(model.MessageStatusSent))
 
 	}
 	return nil
 }
 
-func (s *MessageService) sendWebhook(message *model.Message) error {
+func (s *messageServiceImpl) sendWebhook(message *model.Message) error {
 	json, err := json.Marshal(map[string]any{
 		"to":      message.Phone,
 		"content": message.Content,

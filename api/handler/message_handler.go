@@ -7,7 +7,7 @@ import (
 	"github.com/kayaramazan/insider-message/api/model"
 )
 
-func (h *Handler) GetAllSentMessages(w http.ResponseWriter, r *http.Request) {
+func (h *handlerImpl) GetAllSentMessages(w http.ResponseWriter, r *http.Request) {
 	messages, err := h.messageService.GetAllSentMessages(r.Context())
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "Failed to fetch messages")
@@ -17,7 +17,7 @@ func (h *Handler) GetAllSentMessages(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, messages)
 }
 
-func (h *Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
+func (h *handlerImpl) CreateMessage(w http.ResponseWriter, r *http.Request) {
 	message := model.Message{}
 	if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
 		respondError(w, http.StatusBadRequest, "Invalid request body")
@@ -37,7 +37,7 @@ func (h *Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, message)
 }
 
-func (h *Handler) StartOrStop(w http.ResponseWriter, r *http.Request) {
+func (h *handlerImpl) StartOrStop(w http.ResponseWriter, r *http.Request) {
 	h.job.Toggle()
 
 	respondJSON(w, http.StatusOK, map[string]any{
